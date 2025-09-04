@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: 906766085108.dkr.ecr.ap-south-1.amazonaws.com/spring-petclinic
   tag: latest
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 app:
   contextPath: /petclinic
@@ -24,10 +24,10 @@ database:
     secretName: spring-petclinic-db-credentials-production
   # Backup DB config in case secret cannot be loaded
   # These are overridden by values from the Secret when available
-  host: "${MYSQL_URL:petclinic-aurora-endpoint}" 
+  host: "spring-petclinic-aurora-production.cluster-cfeogqemkml4.ap-south-1.rds.amazonaws.com" 
   name: petclinic
   username: petclinic
-  # Password is stored in Secrets Manager
+  password: "samplepassword"  # Ignored if secretsManager.enabled is true
 
 # Probe configuration (tuned for Spring Boot startup)
 probes:

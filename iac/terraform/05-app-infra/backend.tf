@@ -4,7 +4,7 @@ terraform {
     key    = "env/05-app-infra/terraform.tfstate"
     region = "ap-south-1"
     # Remove profile for GitHub Actions compatibility
-    # profile = "personal" 
+    # profile = "personal"
 
     # Enable state locking using DynamoDB
     # dynamodb_table parameter is deprecated in newer versions

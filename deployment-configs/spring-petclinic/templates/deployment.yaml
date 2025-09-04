@@ -15,31 +15,6 @@ spec:
         {{- include "spring-petclinic.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "spring-petclinic.serviceAccountName" . }}
-      # Init container to fetch DB credentials from AWS Secrets Manager
-      {{- if .Values.database.secretsManager.enabled }}
-      initContainers:
-        - name: get-db-credentials
-          image: amazon/aws-cli:2.15.13
-          command:
-            - sh
-            - -c
-            - |
-              # Fetch the secret
-              SECRET=$(aws secretsmanager get-secret-value --secret-id {{ .Values.database.secretsManager.secretName }} --region {{ .Values.aws.region }} --query 'SecretString' --output text)
-              
-              # Extract and save values to files
-              echo $SECRET | jq -r '.username' > /mnt/secrets/username
-              echo $SECRET | jq -r '.password' > /mnt/secrets/password
-              echo $SECRET | jq -r '.host' > /mnt/secrets/host
-              echo $SECRET | jq -r '.port // "3306"' > /mnt/secrets/port
-              echo $SECRET | jq -r '.dbname' > /mnt/secrets/dbname
-              
-              # Create connection string
-              printf "jdbc:mysql://%s:%s/%s" "$(cat /mnt/secrets/host)" "$(cat /mnt/secrets/port)" "$(cat /mnt/secrets/dbname)" > /mnt/secrets/url
-          volumeMounts:
-            - name: db-credentials
-              mountPath: /mnt/secrets
-      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -54,6 +29,9 @@ spec:
             # Activate the Aurora profile
             - name: SPRING_PROFILES_ACTIVE
               value: {{ .Values.app.springProfile | default "default" | quote }}
+            # Force database type to MySQL
+            - name: DATABASE
+              value: "mysql"
             # AWS Region configuration
             - name: AWS_REGION
               value: {{ .Values.aws.region | quote }}
@@ -68,35 +46,17 @@ spec:
               value: {{ ternary "true" "false" .Values.initData.kms.enabled | quote }}
             - name: APP_INIT_PET_TYPES_KMS_KEY_ALIAS
               value: {{ .Values.initData.kms.keyAlias | quote }}
-            {{- if .Values.database.secretsManager.enabled }}
-            # Set DB connection details from secrets files
+            # Database configuration - direct configuration
             - name: MYSQL_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "spring-petclinic.fullname" . }}-db-config
-                  key: url
+              value: "{{ .Values.database.host }}/{{ .Values.database.name }}"
             - name: MYSQL_USER
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "spring-petclinic.fullname" . }}-db-config
-                  key: username
-            - name: MYSQL_PASS
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "spring-petclinic.fullname" . }}-db-config
-                  key: password
-            {{- else }}
-            # Direct database configuration
-            - name: MYSQL_URL
-              value: {{ .Values.database.host | quote }}
-            - name: MYSQL_USER
-              value: {{ .Values.database.username | quote }}
+              value: "{{ .Values.database.username }}"
             - name: MYSQL_PASS
               valueFrom:
                 secretKeyRef:
                   name: {{ include "spring-petclinic.fullname" . }}-db-credentials
                   key: password
-            {{- end }}
+                  optional: true
           {{- /* Probe value safety defaults */ -}}
           {{- $readiness := (default (dict "initialDelaySeconds" 30 "periodSeconds" 5 "failureThreshold" 6 "timeoutSeconds" 3) .Values.probes.readiness) -}}
           {{- $liveness := (default (dict "initialDelaySeconds" 120 "periodSeconds" 15 "failureThreshold" 3 "timeoutSeconds" 5) .Values.probes.liveness) -}}
@@ -128,12 +88,6 @@ spec:
             timeoutSeconds: {{ $liveness.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if .Values.database.secretsManager.enabled }}
-          volumeMounts:
-            - name: db-credentials
-              mountPath: /mnt/secrets
-              readOnly: true
-          {{- end }}
       {{- if .Values.podAntiAffinity.enabled }}
       affinity:
         podAntiAffinity:
@@ -145,12 +99,6 @@ spec:
                 values:
                 - {{ include "spring-petclinic.name" . }}
             topologyKey: {{ .Values.podAntiAffinity.topologyKey }}
-      {{- end }}
-      {{- if .Values.database.secretsManager.enabled }}
-      volumes:
-        - name: db-credentials
-          emptyDir:
-            medium: Memory
       {{- end }}
 
       # Optional: tolerations can be added later via values

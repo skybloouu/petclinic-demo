@@ -62,7 +62,7 @@ resource "aws_security_group" "aurora_sg" {
     to_port     = 3306
     protocol    = "tcp"
     description = "MySQL access from within VPC"
-    cidr_blocks = ["10.0.0.0/16"] # Replace with actual VPC CIDR if different
+    cidr_blocks = ["100.64.0.0/16"] # Replace with actual VPC CIDR if different
   }
 
   egress {
@@ -112,7 +112,7 @@ resource "aws_rds_cluster" "aurora_mysql" {
   cluster_identifier              = "${var.application_name}-aurora-${var.environment}"
   engine                          = "aurora-mysql"
   engine_mode                     = "provisioned"
-  engine_version                  = "8.0.mysql_aurora.3.05.0" # Latest compatible version
+  engine_version                  = "8.0.mysql_aurora.3.04.1" # Compatible version
   database_name                   = local.db_name
   master_username                 = local.master_user
   master_password                 = random_password.db_password.result
