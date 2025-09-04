@@ -28,3 +28,29 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# ECR repository name
+variable "ecr_repository_name" {
+  description = "Name of the ECR repository to create"
+  type        = string
+  default     = "spring-petclinic"
+}
+
+# GitHub repository owner (organization or user)
+variable "github_owner" {
+  description = "GitHub organization or user that owns the repository used in Actions"
+  type        = string
+}
+
+# GitHub repository name
+variable "github_repo" {
+  description = "GitHub repository name used for pushing images"
+  type        = string
+}
+
+# GitHub branch allowed to assume the OIDC role
+variable "github_branch" {
+  description = "GitHub branch name allowed to push (e.g. main)"
+  type        = string
+  default     = "main"
+}

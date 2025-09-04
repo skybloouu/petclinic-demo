@@ -1,13 +1,3 @@
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
 # S3 bucket for pet types initialization
 resource "aws_s3_bucket" "init_bucket" {
   bucket = var.bucket_name

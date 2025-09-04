@@ -12,3 +12,13 @@ output "app_role_arn" {
   description = "ARN of the IAM role created for the application"
   value       = aws_iam_role.app_role.arn
 }
+
+output "ecr_repository_url" {
+  description = "ECR repository URL"
+  value       = aws_ecr_repository.app.repository_url
+}
+
+output "github_ecr_push_role_arn" {
+  description = "IAM Role ARN for GitHub Actions to push images"
+  value       = aws_iam_role.github_ecr_push.arn
+}
