@@ -1,0 +1,15 @@
+{{- if .Values.database.secretsManager.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spring-petclinic.fullname" . }}-db-config
+  labels:
+    {{- include "spring-petclinic.labels" . | nindent 4 }}
+data:
+  url: ""
+  username: ""
+  password: ""
+  dbname: ""
+  host: ""
+  port: ""
+{{- end }}

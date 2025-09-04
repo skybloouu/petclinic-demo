@@ -8,10 +8,26 @@ image:
 app:
   contextPath: /petclinic
   healthPath: /petclinic/actuator/health
+  # Configure Spring Boot to use Aurora profile
+  springProfile: aurora
 
 # AWS related settings
 aws:
   region: ap-south-1
+
+# Database configuration
+database:
+  type: aurora-mysql
+  # Reference the Secret containing Aurora credentials
+  secretsManager:
+    enabled: true
+    secretName: spring-petclinic-db-credentials-production
+  # Backup DB config in case secret cannot be loaded
+  # These are overridden by values from the Secret when available
+  host: "${MYSQL_URL:petclinic-aurora-endpoint}" 
+  name: petclinic
+  username: petclinic
+  # Password is stored in Secrets Manager
 
 # Probe configuration (tuned for Spring Boot startup)
 probes:
