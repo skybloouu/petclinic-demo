@@ -48,6 +48,9 @@ resource "aws_secretsmanager_secret_version" "petclinic_db_secret_version" {
     port     = 3306
     host     = aws_rds_cluster.aurora_mysql.endpoint
   })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 # Create a security group for the Aurora cluster
