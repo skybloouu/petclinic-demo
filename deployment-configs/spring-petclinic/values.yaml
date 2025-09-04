@@ -1,0 +1,90 @@
+replicaCount: 2
+
+image:
+  repository: 906766085108.dkr.ecr.ap-south-1.amazonaws.com/spring-petclinic
+  tag: latest
+  pullPolicy: IfNotPresent
+
+app:
+  contextPath: /petclinic
+  healthPath: /petclinic/actuator/health
+
+# AWS related settings
+aws:
+  region: ap-south-1
+
+# Probe configuration (tuned for Spring Boot startup)
+probes:
+  startup:
+    enabled: true
+  initialDelaySeconds: 10      # allow app boot before first probe
+  periodSeconds: 5
+  failureThreshold: 18         # 18 * 5 = 90s window
+  timeoutSeconds: 5            # allow slower response during cold start
+  readiness:
+  initialDelaySeconds: 30      # wait for full initialization
+  periodSeconds: 5
+  failureThreshold: 6
+  timeoutSeconds: 3
+  liveness:
+  initialDelaySeconds: 120     # don't kill during longer warmups
+  periodSeconds: 15
+  failureThreshold: 3
+  timeoutSeconds: 5
+
+# Initialization data (S3/KMS) configuration passed as env vars -> Spring properties
+initData:
+  bucket: spring-petclinic-init-demo1
+  objectKey: petclinic-pettypes.txt
+  kms:
+    enabled: true
+    keyAlias: alias/spring-petclinic-init-demo1
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /petclinic/actuator/health
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=15
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/group.name: petclinic
+  hosts:
+    - host: ""  # Optional: set to a real domain once ALB created & DNS ready
+      paths:
+        - path: /petclinic
+          pathType: Prefix
+  tls: []  # Add ACME/Certificate ARN configuration later if using HTTPS
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+podAntiAffinity:
+  enabled: true
+  topologyKey: "topology.kubernetes.io/zone"

@@ -23,14 +23,50 @@ spec:
             - name: http
               containerPort: 8080
               protocol: TCP
-          livenessProbe:
+          env:
+            - name: SERVER_SERVLET_CONTEXT_PATH
+              value: {{ .Values.app.contextPath | quote }}
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | quote }}
+            - name: AWS_DEFAULT_REGION
+              value: {{ .Values.aws.region | quote }}
+            - name: APP_INIT_PET_TYPES_BUCKET
+              value: {{ .Values.initData.bucket | quote }}
+            - name: APP_INIT_PET_TYPES_OBJECT_KEY
+              value: {{ .Values.initData.objectKey | quote }}
+            - name: APP_INIT_PET_TYPES_KMS_ENCRYPTED
+              value: {{ ternary "true" "false" .Values.initData.kms.enabled | quote }}
+            - name: APP_INIT_PET_TYPES_KMS_KEY_ALIAS
+              value: {{ .Values.initData.kms.keyAlias | quote }}
+          {{- /* Probe value safety defaults */ -}}
+          {{- $readiness := (default (dict "initialDelaySeconds" 30 "periodSeconds" 5 "failureThreshold" 6 "timeoutSeconds" 3) .Values.probes.readiness) -}}
+          {{- $liveness := (default (dict "initialDelaySeconds" 120 "periodSeconds" 15 "failureThreshold" 3 "timeoutSeconds" 5) .Values.probes.liveness) -}}
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
             httpGet:
-              path: /
+              path: {{ .Values.app.healthPath | default (.Values.app.contextPath | default "/") | quote }}
               port: http
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+          {{- end }}
           readinessProbe:
             httpGet:
-              path: /
+              path: {{ .Values.app.healthPath | default (.Values.app.contextPath | default "/") | quote }}
               port: http
+            initialDelaySeconds: {{ $readiness.initialDelaySeconds }}
+            periodSeconds: {{ $readiness.periodSeconds }}
+            failureThreshold: {{ $readiness.failureThreshold }}
+            timeoutSeconds: {{ $readiness.timeoutSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.app.healthPath | default (.Values.app.contextPath | default "/") | quote }}
+              port: http
+            initialDelaySeconds: {{ $liveness.initialDelaySeconds }}
+            periodSeconds: {{ $liveness.periodSeconds }}
+            failureThreshold: {{ $liveness.failureThreshold }}
+            timeoutSeconds: {{ $liveness.timeoutSeconds }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       {{- if .Values.podAntiAffinity.enabled }}
@@ -44,3 +80,7 @@ spec:
                 values:
                 - {{ include "spring-petclinic.name" . }}
             topologyKey: {{ .Values.podAntiAffinity.topologyKey }}
+  {{- end }}
+
+  # Optional: tolerations can be added later via values
+  # tolerations: []

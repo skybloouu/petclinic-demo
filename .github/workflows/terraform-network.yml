@@ -1,0 +1,75 @@
+name: Terraform 00-network
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'iac/terraform/00-network/**'
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'iac/terraform/00-network/**'
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ap-south-1
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  terraform:
+    name: network
+    runs-on: ubuntu-latest
+    concurrency:
+      group: terraform-network-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_GITHUB_OIDC_ROLE_ARN }}
+          role-session-name: tfNetworkSession
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Init
+        working-directory: iac/terraform/00-network
+        run: terraform init -input=false
+
+      - name: Format Check
+        working-directory: iac/terraform/00-network
+        run: terraform fmt -check -recursive
+
+      - name: Validate
+        working-directory: iac/terraform/00-network
+        run: terraform validate -no-color
+
+      - name: Plan
+        if: github.event_name == 'pull_request'
+        id: plan
+        working-directory: iac/terraform/00-network
+        run: terraform plan -no-color -input=false -out=tfplan
+
+      - name: Upload Plan Artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: network-tfplan
+          path: iac/terraform/00-network/tfplan
+
+      - name: Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: iac/terraform/00-network
+        run: terraform apply -auto-approve -input=false
