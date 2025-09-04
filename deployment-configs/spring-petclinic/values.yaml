@@ -45,8 +45,10 @@ fullnameOverride: ""
 
 serviceAccount:
   create: true
-  name: ""
-  annotations: {}
+  # Explicit name so IRSA trust matches (Terraform role expects 'spring-petclinic')
+  name: spring-petclinic
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::906766085108:role/spring-petclinic-irsa-production
 
 service:
   type: ClusterIP

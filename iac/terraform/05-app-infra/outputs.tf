@@ -8,9 +8,9 @@ output "kms_key_arn" {
   value       = aws_kms_key.pet_types_key.arn
 }
 
-output "app_role_arn" {
-  description = "ARN of the IAM role created for the application"
-  value       = aws_iam_role.app_role.arn
+output "app_irsa_role_arn" {
+  description = "ARN of the IAM role assumed via IRSA by the application"
+  value       = aws_iam_role.app_irsa.arn
 }
 
 output "ecr_repository_url" {

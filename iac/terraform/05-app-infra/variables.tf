@@ -29,6 +29,20 @@ variable "tags" {
   default     = {}
 }
 
+# Kubernetes namespace where application runs
+variable "application_namespace" {
+  description = "Kubernetes namespace of the application service account"
+  type        = string
+  default     = "petclinic"
+}
+
+# Service account name used by the application (Helm chart controlled)
+variable "service_account_name" {
+  description = "Service account name for IRSA trust (must match Helm chart)"
+  type        = string
+  default     = "spring-petclinic"
+}
+
 # ECR repository name
 variable "ecr_repository_name" {
   description = "Name of the ECR repository to create"

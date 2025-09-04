@@ -51,70 +51,88 @@ resource "aws_kms_alias" "pet_types_key_alias" {
   target_key_id = aws_kms_key.pet_types_key.key_id
 }
 
-# IAM role for the application
-resource "aws_iam_role" "app_role" {
-  name = "${var.application_name}-app-role-${var.environment}"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-      }
-    ]
-  })
+#############################
+# IRSA Role for Kubernetes Application (replaces legacy EC2 assume role)
+#############################
 
-  tags = merge(
-    {
-      Environment = var.environment
-    },
-    var.tags
-  )
+# Remote state to fetch EKS OIDC provider info from control-plane stack
+data "terraform_remote_state" "control_plane" {
+  backend = "s3"
+  config = {
+    bucket  = "stackgen-terraform-state"
+    key     = "env/01-control-plane/terraform.tfstate"
+    region  = "ap-south-1"
+    profile = "personal"
+  }
 }
 
-# IAM policy for S3 access
-resource "aws_iam_role_policy" "s3_access" {
-  name = "${var.application_name}-s3-access-${var.environment}"
-  role = aws_iam_role.app_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:DeleteObject"
-        ]
-        Resource = [
-          "${aws_s3_bucket.init_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
+locals {
+  oidc_provider_arn    = try(data.terraform_remote_state.control_plane.outputs.oidc_provider_arn, "")
+  oidc_issuer_url      = try(data.terraform_remote_state.control_plane.outputs.cluster_oidc_issuer_url, "")
+  oidc_hostpath        = local.oidc_issuer_url == "" ? "" : replace(local.oidc_issuer_url, "https://", "")
+  service_account_ns   = var.application_namespace
+  service_account_name = var.service_account_name
+  sa_sub_claim         = "system:serviceaccount:${local.service_account_ns}:${local.service_account_name}"
 }
 
-# IAM policy for KMS access
-resource "aws_iam_role_policy" "kms_access" {
-  name = "${var.application_name}-kms-access-${var.environment}"
-  role = aws_iam_role.app_role.id
+data "aws_iam_policy_document" "app_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [local.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_hostpath}:sub"
+      values   = [local.sa_sub_claim]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_hostpath}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = [
-          aws_kms_key.pet_types_key.arn
-        ]
-      }
-    ]
-  })
+data "aws_iam_policy_document" "app_permissions" {
+  statement {
+    sid       = "S3ReadPetTypes"
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.init_bucket.arn}/*"]
+  }
+  statement {
+    sid       = "KMSDecryptPetTypes"
+    effect    = "Allow"
+    actions   = ["kms:Decrypt"]
+    resources = [aws_kms_key.pet_types_key.arn]
+  }
+}
+resource "aws_iam_role" "app_irsa" {
+  name               = "${var.application_name}-irsa-${var.environment}"
+  assume_role_policy = data.aws_iam_policy_document.app_trust.json
+  tags = merge({
+    Environment = var.environment
+    Application = var.application_name
+  }, var.tags)
+
+  lifecycle {
+    precondition {
+      condition     = local.oidc_provider_arn != ""
+      error_message = "OIDC provider ARN is empty. Apply the 01-control-plane stack with outputs.tf exposing oidc_provider_arn before creating IRSA role."
+    }
+    precondition {
+      condition     = local.oidc_hostpath != ""
+      error_message = "OIDC issuer URL is empty. Ensure control-plane state includes cluster_oidc_issuer_url output."
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "app_irsa_inline" {
+  name   = "${var.application_name}-irsa-inline-${var.environment}"
+  role   = aws_iam_role.app_irsa.id
+  policy = data.aws_iam_policy_document.app_permissions.json
 }
