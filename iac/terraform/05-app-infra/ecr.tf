@@ -120,6 +120,3 @@ resource "aws_iam_role_policy" "github_ecr_push_inline" {
   policy = data.aws_iam_policy_document.github_ecr_permissions.json
 }
 
-#############################
-# Helpful Outputs (also appended in outputs.tf)
-#############################
