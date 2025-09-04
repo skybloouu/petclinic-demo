@@ -1,12 +1,16 @@
 terraform {
   backend "s3" {
-    bucket  = "stackgen-terraform-state"
-    key     = "env/01-control-plane/terraform.tfstate"
-    region  = "ap-south-1"
-    profile = "personal"
+    bucket = "stackgen-terraform-state"
+    key    = "env/01-control-plane/terraform.tfstate"
+    region = "ap-south-1"
+    # Remove profile for GitHub Actions compatibility
+    # profile = "personal"
 
     # Enable state locking using DynamoDB
-    dynamodb_table = "terraform-state-lock"
-    encrypt        = true
+    # dynamodb_table parameter is deprecated in newer versions
+    # dynamodb_table = "terraform-state-lock"
+    # Use this instead if needed:
+    use_lockfile = true
+    encrypt      = true
   }
 }
