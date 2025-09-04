@@ -54,3 +54,9 @@ variable "environment" {
   type        = string
   default     = "production"
 }
+
+variable "devops_admin_role_arn" {
+  description = "ARN of the IAM role to grant EKS cluster admin access"
+  type        = string
+  default     = ""
+}

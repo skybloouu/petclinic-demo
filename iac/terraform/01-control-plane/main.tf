@@ -22,6 +22,26 @@ module "eks" {
   # Optional: Adds the current caller identity as an administrator via cluster access entry
   enable_cluster_creator_admin_permissions = true
 
+  # Access entries for additional IAM roles
+  access_entries = {
+    # Add devops-eng role as a cluster admin
+    devops_eng_role = {
+      kubernetes_groups = []
+      principal_arn     = var.devops_admin_role_arn
+      type              = "STANDARD"
+
+      # Grant admin access to the role
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+
   vpc_id                   = var.vpc_id
   subnet_ids               = var.subnet_ids
   control_plane_subnet_ids = var.control_plane_subnet_ids
