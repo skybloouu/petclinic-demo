@@ -14,3 +14,6 @@ environment = "production"
 
 # IAM role for DevOps admin access to EKS cluster
 devops_admin_role_arn = "arn:aws:iam::906766085108:role/devops-eng"
+
+# IAM user for admin access to EKS cluster
+admin_user_arn = "arn:aws:iam::906766085108:user/aakashdabrase"

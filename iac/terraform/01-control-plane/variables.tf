@@ -60,3 +60,9 @@ variable "devops_admin_role_arn" {
   type        = string
   default     = ""
 }
+
+variable "admin_user_arn" {
+  description = "ARN of the IAM user to grant EKS cluster admin access"
+  type        = string
+  default     = ""
+}
