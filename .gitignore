@@ -1,0 +1,28 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
+tfplan
+*.tfvars
+.terraform.lock.hcl
+
+# Helm
+*.tgz
+charts/
+values.yaml
+values-*.yaml
+
+# General
+*.log
+*.bak
+*.swp
+.DS_Store
+
+# Ignore deployment configs and generated files
+__pycache__/
+*.pyc
+
+# Ignore IDE and editor files
+.vscode/
+.idea/
