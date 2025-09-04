@@ -1,0 +1,95 @@
+name: Deploy Kubernetes Add-ons
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'petclinic-demo/deployment-configs/addons/**'
+      - '.github/workflows/deploy-addons.yaml'
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'petclinic-demo/deployment-configs/addons/**'
+      - '.github/workflows/deploy-addons.yaml'
+
+# Define environment variables for reuse across jobs
+env:
+  AWS_REGION: ap-south-1
+  CLUSTER_NAME: petclinic-cluster
+
+# Ensure only one deployment workflow runs at a time
+concurrency:
+  group: addons-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-addons:
+    name: Deploy Kubernetes Add-ons
+    # Only run this job on merged PRs or direct pushes to main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for OIDC authentication
+      contents: read   # Required to check out code
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::906766085108:role/github-actions-terraform
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.14.2'  # Use appropriate Helm version
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.29.2'  # Use appropriate kubectl version
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+      # Install AWS Load Balancer Controller
+      - name: Deploy AWS Load Balancer Controller
+        run: |
+          echo "Installing AWS Load Balancer Controller"
+          kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            -n kube-system \
+            -f petclinic-demo/deployment-configs/addons/aws-load-balancer-controller-values.yaml \
+            --wait
+
+      # Install Cert Manager
+      - name: Deploy Cert Manager
+        run: |
+          echo "Installing Cert Manager"
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.3/cert-manager.crds.yaml
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            -n cert-manager \
+            --create-namespace \
+            -f petclinic-demo/deployment-configs/addons/cert-manager-values.yaml \
+            --wait
+
+      # Install Metrics Server
+      - name: Deploy Metrics Server
+        run: |
+          echo "Installing Metrics Server"
+          helm upgrade --install metrics-server metrics-server/metrics-server \
+            -n kube-system \
+            -f petclinic-demo/deployment-configs/addons/metrics-server-values.yaml \
+            --wait
+          
+      - name: Verify Deployments
+        run: |
+          echo "Verifying deployments..."
+          kubectl get deployments -A
+          kubectl get pods -A
