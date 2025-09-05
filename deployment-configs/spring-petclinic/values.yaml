@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: 906766085108.dkr.ecr.ap-south-1.amazonaws.com/spring-petclinic
-  tag: latest
+  tag: s3-test-v2
   pullPolicy: Always
 
 app:
@@ -18,6 +18,8 @@ aws:
 # Database configuration
 database:
   type: aurora-mysql
+  # Control whether to create the secret or use an existing one
+  createSecret: false
   # Reference the Secret containing Aurora credentials
   secretsManager:
     enabled: true

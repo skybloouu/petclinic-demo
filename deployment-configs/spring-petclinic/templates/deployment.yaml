@@ -40,7 +40,7 @@ spec:
             # Initialize pet types from S3 
             - name: APP_INIT_PET_TYPES_BUCKET
               value: {{ .Values.initData.bucket | quote }}
-            - name: APP_INIT_PET_TYPES_OBJECT_KEY
+            - name: APP_INIT_PET_TYPES_KEY
               value: {{ .Values.initData.objectKey | quote }}
             - name: APP_INIT_PET_TYPES_KMS_ENCRYPTED
               value: {{ ternary "true" "false" .Values.initData.kms.enabled | quote }}
@@ -54,7 +54,7 @@ spec:
             - name: MYSQL_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "spring-petclinic.fullname" . }}-db-credentials
+                  name: spring-petclinic-db-credentials
                   key: password
                   optional: true
           {{- /* Probe value safety defaults */ -}}

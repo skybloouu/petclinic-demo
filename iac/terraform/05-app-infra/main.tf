@@ -60,10 +60,10 @@ resource "aws_kms_alias" "pet_types_key_alias" {
 data "terraform_remote_state" "control_plane" {
   backend = "s3"
   config = {
-    bucket  = "stackgen-terraform-state"
-    key     = "env/01-control-plane/terraform.tfstate"
-    region  = "ap-south-1"
-    profile = "personal"
+    bucket = "stackgen-terraform-state"
+    key    = "env/01-control-plane/terraform.tfstate"
+    region = "ap-south-1"
+    # profile = "personal"
   }
 }
 
@@ -101,13 +101,19 @@ data "aws_iam_policy_document" "app_permissions" {
   statement {
     sid       = "S3ReadPetTypes"
     effect    = "Allow"
-    actions   = ["s3:GetObject", "s3:DeleteObject"]
+    actions   = ["s3:GetObject", "s3:DeleteObject", "s3:PutObject"]
     resources = ["${aws_s3_bucket.init_bucket.arn}/*"]
+  }
+  statement {
+    sid       = "S3ListBucket"
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.init_bucket.arn]
   }
   statement {
     sid       = "KMSDecryptPetTypes"
     effect    = "Allow"
-    actions   = ["kms:Decrypt"]
+    actions   = ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"]
     resources = [aws_kms_key.pet_types_key.arn]
   }
 }
