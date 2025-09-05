@@ -61,6 +61,7 @@ jobs:
           ls -la deployment-configs/addons/charts/aws-load-balancer-controller/
           ls -la deployment-configs/addons/charts/cert-manager/
           ls -la deployment-configs/addons/charts/metrics-server/
+          pwd
 
       # Install AWS Load Balancer Controller
       - name: Deploy AWS Load Balancer Controller
