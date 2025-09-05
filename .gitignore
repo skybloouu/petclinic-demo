@@ -8,7 +8,6 @@ tfplan
 
 # Helm
 *.tgz
-charts/
 
 # General
 *.log

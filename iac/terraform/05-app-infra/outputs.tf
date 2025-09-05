@@ -22,3 +22,29 @@ output "github_ecr_push_role_arn" {
   description = "IAM Role ARN for GitHub Actions to push images"
   value       = aws_iam_role.github_ecr_push.arn
 }
+
+# Aurora MySQL Outputs
+output "aurora_mysql_endpoint" {
+  description = "The endpoint of the Aurora MySQL cluster"
+  value       = aws_rds_cluster.aurora_mysql.endpoint
+}
+
+output "aurora_mysql_reader_endpoint" {
+  description = "The reader endpoint of the Aurora MySQL cluster"
+  value       = aws_rds_cluster.aurora_mysql.reader_endpoint
+}
+
+output "aurora_mysql_port" {
+  description = "The port of the Aurora MySQL cluster"
+  value       = aws_rds_cluster.aurora_mysql.port
+}
+
+output "aurora_mysql_database_name" {
+  description = "The database name of the Aurora MySQL cluster"
+  value       = aws_rds_cluster.aurora_mysql.database_name
+}
+
+output "aurora_mysql_secret_arn" {
+  description = "The ARN of the Secrets Manager secret storing DB credentials"
+  value       = aws_secretsmanager_secret.petclinic_db_secret.arn
+}

@@ -14,6 +14,8 @@ on:
     paths:
       - 'petclinic-demo/deployment-configs/addons/**'
       - '.github/workflows/deploy-addons.yaml'
+  # Allow manual workflow trigger for testing
+  workflow_dispatch:
 
 # Define environment variables for reuse across jobs
 env:
@@ -28,8 +30,6 @@ concurrency:
 jobs:
   deploy-addons:
     name: Deploy Kubernetes Add-ons
-    # Only run this job on merged PRs or direct pushes to main
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Required for OIDC authentication
@@ -46,24 +46,27 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: 'v3.14.2'  # Use appropriate Helm version
+        uses: azure/setup-helm@v4
 
       - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.29.2'  # Use appropriate kubectl version
+        uses: azure/setup-kubectl@v4
 
       - name: Update kubeconfig
         run: aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+        
+      - name: Verify local charts
+        run: |
+          echo "Verifying local charts are available..."
+          ls -la petclinic-demo/deployment-configs/addons/charts/
+          ls -la petclinic-demo/deployment-configs/addons/charts/aws-load-balancer-controller/
+          ls -la petclinic-demo/deployment-configs/addons/charts/cert-manager/
+          ls -la petclinic-demo/deployment-configs/addons/charts/metrics-server/
 
       # Install AWS Load Balancer Controller
       - name: Deploy AWS Load Balancer Controller
         run: |
-          echo "Installing AWS Load Balancer Controller"
-          kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
-          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+          helm upgrade --install aws-load-balancer-controller \
+            petclinic-demo/deployment-configs/addons/charts/aws-load-balancer-controller \
             -n kube-system \
             -f petclinic-demo/deployment-configs/addons/aws-load-balancer-controller-values.yaml \
             --wait
@@ -72,8 +75,8 @@ jobs:
       - name: Deploy Cert Manager
         run: |
           echo "Installing Cert Manager"
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.3/cert-manager.crds.yaml
-          helm upgrade --install cert-manager jetstack/cert-manager \
+          helm upgrade --install cert-manager \
+            petclinic-demo/deployment-configs/addons/charts/cert-manager \
             -n cert-manager \
             --create-namespace \
             -f petclinic-demo/deployment-configs/addons/cert-manager-values.yaml \
@@ -83,7 +86,9 @@ jobs:
       - name: Deploy Metrics Server
         run: |
           echo "Installing Metrics Server"
-          helm upgrade --install metrics-server metrics-server/metrics-server \
+          # Install using local chart
+          helm upgrade --install metrics-server \
+            petclinic-demo/deployment-configs/addons/charts/metrics-server \
             -n kube-system \
             -f petclinic-demo/deployment-configs/addons/metrics-server-values.yaml \
             --wait
@@ -91,5 +96,16 @@ jobs:
       - name: Verify Deployments
         run: |
           echo "Verifying deployments..."
+          echo "Checking all deployments:"
           kubectl get deployments -A
-          kubectl get pods -A
+          
+          echo "Checking addon pods:"
+          kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+          kubectl get pods -n cert-manager -l app.kubernetes.io/name=cert-manager
+          kubectl get pods -n kube-system -l app.kubernetes.io/name=metrics-server
+          
+          echo "Checking services:"
+          kubectl get svc -n kube-system
+          kubectl get svc -n cert-manager
+          
+          echo "All addons deployed from local charts successfully!"

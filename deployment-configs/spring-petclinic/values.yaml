@@ -2,16 +2,34 @@ replicaCount: 2
 
 image:
   repository: 906766085108.dkr.ecr.ap-south-1.amazonaws.com/spring-petclinic
-  tag: latest
-  pullPolicy: IfNotPresent
+  tag: s3-test-v2
+  pullPolicy: Always
 
 app:
   contextPath: /petclinic
   healthPath: /petclinic/actuator/health
+  # Configure Spring Boot to use Aurora profile
+  springProfile: aurora
 
 # AWS related settings
 aws:
   region: ap-south-1
+
+# Database configuration
+database:
+  type: aurora-mysql
+  # Control whether to create the secret or use an existing one
+  createSecret: false
+  # Reference the Secret containing Aurora credentials
+  secretsManager:
+    enabled: true
+    secretName: spring-petclinic-db-credentials-production
+  # Backup DB config in case secret cannot be loaded
+  # These are overridden by values from the Secret when available
+  host: "spring-petclinic-aurora-production.cluster-cfeogqemkml4.ap-south-1.rds.amazonaws.com" 
+  name: petclinic
+  username: petclinic
+  password: "samplepassword"  # Ignored if secretsManager.enabled is true
 
 # Probe configuration (tuned for Spring Boot startup)
 probes:

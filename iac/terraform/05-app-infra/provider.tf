@@ -12,6 +12,6 @@ terraform {
 provider "aws" {
   # Use environment credentials for GitHub Actions compatibility
   # (credentials will be provided by the OIDC role)
-  # profile = "personal" 
+  # profile = "personal"
   region = "ap-south-1"
 }

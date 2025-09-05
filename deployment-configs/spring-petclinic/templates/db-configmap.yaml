@@ -1,0 +1,18 @@
+{{- if .Values.database.secretsManager.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "spring-petclinic.fullname" . }}-db-config
+  labels:
+    {{- include "spring-petclinic.labels" . | nindent 4 }}
+data:
+  # These are placeholders that will be populated by the init container
+  # The init container will read from Secrets Manager and write the values to files
+  # mounted at /mnt/secrets, then update this ConfigMap
+  url: "{{ .Values.database.host }}"
+  username: "{{ .Values.database.username }}"
+  password: "{{ .Values.database.password | default "placeholder" }}"
+  dbname: "{{ .Values.database.name }}"
+  host: "{{ .Values.database.host }}"
+  port: "3306"
+{{- end }}
