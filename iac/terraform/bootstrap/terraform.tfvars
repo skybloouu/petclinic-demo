@@ -1,6 +1,6 @@
 # Provide real values before applying.
 github_owner                = "skybloouu"
-github_repo                 = "petclinic-demo"
+github_repo                 = "petclinic-demo-iac"
 allowed_branches            = ["main"]
 create_github_oidc_provider = false
 # Use import to get the existing provider ARN or uncomment and use the AWS CLI:
