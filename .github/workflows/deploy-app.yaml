@@ -47,13 +47,6 @@ jobs:
           role-to-assume: arn:aws:iam::906766085108:role/github-actions-terraform
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: maven
-
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
