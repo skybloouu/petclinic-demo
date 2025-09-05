@@ -82,14 +82,16 @@ ingress:
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port
     alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
     alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=15
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
     alb.ingress.kubernetes.io/group.name: petclinic
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: 'arn:aws:acm:ap-south-1:906766085108:certificate/bdd03647-f974-4db9-9f2a-556b9b5d03fd'
   hosts:
     - host: ""  # Optional: set to a real domain once ALB created & DNS ready
       paths:
         - path: /petclinic
           pathType: Prefix
-  tls: []  # Add ACME/Certificate ARN configuration later if using HTTPS
+  tls: []  # Using ALB's built-in SSL termination instead of Kubernetes TLS
 
 resources:
   limits:
