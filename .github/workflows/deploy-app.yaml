@@ -5,16 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'petclinic-demo/deployment-configs/spring-petclinic/**'
-      - 'spring-petclinic/**'
+      - 'deployment-configs/spring-petclinic/**'
       - '.github/workflows/deploy-app.yaml'
   pull_request:
     types: [closed]
     branches:
       - main
     paths:
-      - 'petclinic-demo/deployment-configs/spring-petclinic/**'
-      - 'spring-petclinic/**'
+      - 'deployment-configs/spring-petclinic/**'
       - '.github/workflows/deploy-app.yaml'
 
 # Define environment variables for reuse across jobs
@@ -78,11 +76,11 @@ jobs:
         
           
           # Deploy application using Helm
-          helm upgrade --install spring-petclinic ./petclinic-demo/deployment-configs/spring-petclinic \
+          helm upgrade --install spring-petclinic deployment-configs/spring-petclinic \
             --namespace petclinic --create-namespace \
             --set image.repository=$(echo $IMAGE | cut -d: -f1) \
             --set image.tag=$(echo $IMAGE | cut -d: -f2) \
-            -f petclinic-demo/deployment-configs/spring-petclinic/values.yaml \
+            -f deployment-configs/spring-petclinic/values.yaml \
             --wait --timeout 5m
             
       - name: Verify Deployment
