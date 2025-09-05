@@ -250,6 +250,15 @@ resource "aws_network_acl" "private" {
     to_port    = 0
   }
 
+  ingress {
+    protocol   = "-1"
+    rule_no    = 120
+    action     = "allow"
+    cidr_block = "0.0.0.0/0"
+    from_port  = 0
+    to_port    = 0
+  }
+
   egress {
     protocol   = "-1"
     rule_no    = 100
