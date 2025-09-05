@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - 'petclinic-demo/deployment-configs/addons/**'
+      - 'deployment-configs/addons/**'
       - '.github/workflows/deploy-addons.yaml'
   pull_request:
     types: [closed]
     branches:
       - main
     paths:
-      - 'petclinic-demo/deployment-configs/addons/**'
+      - 'deployment-configs/addons/**'
       - '.github/workflows/deploy-addons.yaml'
   # Allow manual workflow trigger for testing
   workflow_dispatch:
@@ -57,18 +57,18 @@ jobs:
       - name: Verify local charts
         run: |
           echo "Verifying local charts are available..."
-          ls -la petclinic-demo/deployment-configs/addons/charts/
-          ls -la petclinic-demo/deployment-configs/addons/charts/aws-load-balancer-controller/
-          ls -la petclinic-demo/deployment-configs/addons/charts/cert-manager/
-          ls -la petclinic-demo/deployment-configs/addons/charts/metrics-server/
+          ls -la deployment-configs/addons/charts/
+          ls -la deployment-configs/addons/charts/aws-load-balancer-controller/
+          ls -la deployment-configs/addons/charts/cert-manager/
+          ls -la deployment-configs/addons/charts/metrics-server/
 
       # Install AWS Load Balancer Controller
       - name: Deploy AWS Load Balancer Controller
         run: |
           helm upgrade --install aws-load-balancer-controller \
-            petclinic-demo/deployment-configs/addons/charts/aws-load-balancer-controller \
+            deployment-configs/addons/charts/aws-load-balancer-controller \
             -n kube-system \
-            -f petclinic-demo/deployment-configs/addons/aws-load-balancer-controller-values.yaml \
+            -f deployment-configs/addons/aws-load-balancer-controller-values.yaml \
             --wait
 
       # Install Cert Manager
@@ -76,10 +76,10 @@ jobs:
         run: |
           echo "Installing Cert Manager"
           helm upgrade --install cert-manager \
-            petclinic-demo/deployment-configs/addons/charts/cert-manager \
+            deployment-configs/addons/charts/cert-manager \
             -n cert-manager \
             --create-namespace \
-            -f petclinic-demo/deployment-configs/addons/cert-manager-values.yaml \
+            -f deployment-configs/addons/cert-manager-values.yaml \
             --wait
 
       # Install Metrics Server
@@ -88,9 +88,9 @@ jobs:
           echo "Installing Metrics Server"
           # Install using local chart
           helm upgrade --install metrics-server \
-            petclinic-demo/deployment-configs/addons/charts/metrics-server \
+            deployment-configs/addons/charts/metrics-server \
             -n kube-system \
-            -f petclinic-demo/deployment-configs/addons/metrics-server-values.yaml \
+            -f deployment-configs/addons/metrics-server-values.yaml \
             --wait
           
       - name: Verify Deployments
